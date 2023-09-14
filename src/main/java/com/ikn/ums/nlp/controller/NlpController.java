@@ -27,7 +27,7 @@ public class NlpController {
 			List<Event> eventsList = nlpService.getAllEventsWithTranscripts();
 			//send the events and generate action items from transcript
 			nlpService.generateActionItemsForEvent(eventsList);
-			return new ResponseEntity<>(eventsList, HttpStatus.OK);
+			return new ResponseEntity<>(true, HttpStatus.OK);
 		}catch (Exception e) {
 			ControllerException umsCE = new ControllerException("error code", e.getStackTrace().toString());
 			return new ResponseEntity<>(umsCE, HttpStatus.OK);

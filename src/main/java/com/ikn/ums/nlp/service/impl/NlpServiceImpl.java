@@ -328,7 +328,7 @@ public class NlpServiceImpl implements NlpService {
 		boolean flag = false;
 		String eventIds = eventids.toString();
 		String batchProcessUrl = "http://UMS-BATCH-SERVICE/teams/events/status/"+eventIds+"/"+isActionItemsGenerated;
-		int isUpdated = restTemplate.getForObject(batchProcessUrl, Integer.class);
+		int isUpdated = restTemplate.getForObject(batchProcessUrl,Integer.class);
 		System.out.println(isUpdated);
 		return flag = true;
 	}

@@ -13,9 +13,8 @@ public interface NlpService {
 	
 	List<Event> getAllEventsWithTranscripts();
 	void generateActionItemsForEvent(List<Event> eventsList) throws IOException, FileNotFoundException;
-	void generateActionItemsFromTranscript();
-	
-	String SendToAction(List<ActionItemVO> actionItem);
-	String  generateActionItems() throws FileNotFoundException;
+
+	//String SendToAction(List<ActionItemVO> actionItem);
+	//String  generateActionItems() throws FileNotFoundException;
 
 }

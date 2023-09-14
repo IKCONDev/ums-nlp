@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,112 +44,139 @@ public class NlpServiceImpl implements NlpService {
 	
 	@Override
 	public void generateActionItemsForEvent(List<Event> eventsList) throws IOException, FileNotFoundException {
+
+		boolean flag = false;
 		List<EventTranscriptModel> eventWithTranscriptModelList = getTranscriptsOfEvents(eventsList);
+		List<Integer> eventIds = new ArrayList<>();
 		// generate action items for each event
-		eventWithTranscriptModelList.forEach(eventWithTranscript -> {
-			int eventId = eventWithTranscript.getEventId();
-			String transcriptContent = eventWithTranscript.getTranscriptContent();
+		//Integer eventId = 0;
+		try {
+			eventWithTranscriptModelList.forEach(eventWithTranscript -> {
+				int eventId = eventWithTranscript.getEventId();
+				String transcriptContent = eventWithTranscript.getTranscriptContent();
 
-			//
-			// Fetch keywords from the file
-			String keywordsFilePath = "Keywords.txt";
-			BufferedReader keywordsReader = null;
-			try {
-				keywordsReader = new BufferedReader(new FileReader(keywordsFilePath));
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			List<String> keywords = new ArrayList<>();
-			String keyword;
-			try {
-				while ((keyword = keywordsReader.readLine()) != null) {
-					keywords.add(keyword.toLowerCase());
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			try {
-				keywordsReader.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			// Tokenize the transcript into sentences
-			SentenceModel sentenceModel = null;
-			try {
-				sentenceModel = new SentenceModel(new FileInputStream("en-sent.bin"));
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			SentenceDetectorME sentenceDetector = new SentenceDetectorME(sentenceModel);
-			String[] sentences = sentenceDetector.sentDetect(transcriptContent);
-
-			// Initialize the tokenizer
-			TokenizerModel tokenizerModel = null;
-			try {
-				tokenizerModel = new TokenizerModel(new FileInputStream("en-token.bin"));
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			Tokenizer tokenizer = new TokenizerME(tokenizerModel);
-
-			// Loop through each sentence and look for keywords
-			List<String> actionItems = new ArrayList<>();
-			for (String sentence : sentences) {
-				sentence = sentence.toLowerCase(); // Convert the sentence to lowercase
-				//String[] words = tokenizer.tokenize(sentence);
-
-				// Check if any of the keywords are in the sentence
-				for (String keyword1 : keywords) {
-					if (containsKeyword(sentence, keyword1)) {
-						// If a keyword is found, add the sentence to the tasks list
-						actionItems.add(sentence);
-						break; // No need to check further keywords in this sentence
-					}
-				}
-			}
-
-			// Print the extracted acitems and write them to a file
-			String actionsFilePath = "actions-items" + eventId + ".txt";
-			FileWriter actionsWriter = null;
-			try {
-				actionsWriter = new FileWriter(actionsFilePath);
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			for (String actionitem : actionItems) {
-				// Define the regular expression pattern to match text between "<" and ">"
-				String pattern = "<[^>]+>";
-				// remove all strings between < and > symbols
-				String originalActionItem = actionitem.replaceAll(pattern, "");
-				System.out.println(originalActionItem);
+				//
+				// Fetch keywords from the file
+				String keywordsFilePath = "Keywords.txt";
+				BufferedReader keywordsReader = null;
 				try {
-					actionsWriter.write(originalActionItem + "\n\n");
+					keywordsReader = new BufferedReader(new FileReader(keywordsFilePath));
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				List<String> keywords = new ArrayList<>();
+				String keyword;
+				try {
+					while ((keyword = keywordsReader.readLine()) != null) {
+						keywords.add(keyword.toLowerCase());
+					}
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				try {
+					keywordsReader.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				// Tokenize the transcript into sentences
+				SentenceModel sentenceModel = null;
+				try {
+					sentenceModel = new SentenceModel(new FileInputStream("en-sent.bin"));
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				SentenceDetectorME sentenceDetector = new SentenceDetectorME(sentenceModel);
+				String[] sentences = sentenceDetector.sentDetect(transcriptContent);
+
+				// Initialize the tokenizer
+				TokenizerModel tokenizerModel = null;
+				try {
+					tokenizerModel = new TokenizerModel(new FileInputStream("en-token.bin"));
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				Tokenizer tokenizer = new TokenizerME(tokenizerModel);
+
+				// Loop through each sentence and look for keywords
+				List<String> actionItems = new ArrayList<>();
+				for (String sentence : sentences) {
+					sentence = sentence.toLowerCase(); // Convert the sentence to lowercase
+					//String[] words = tokenizer.tokenize(sentence);
+
+					// Check if any of the keywords are in the sentence
+					for (String keyword1 : keywords) {
+						if (containsKeyword(sentence, keyword1)) {
+							// If a keyword is found, add the sentence to the tasks list
+							actionItems.add(sentence);
+							break; // No need to check further keywords in this sentence
+						}
+					}
+				}
+
+				// Print the extracted acitems and write them to a file
+				String actionsFilePath = "actions-items" + eventId + ".txt";
+				FileWriter actionsWriter = null;
+				try {
+					actionsWriter = new FileWriter(actionsFilePath);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				for (String actionitem : actionItems) {
+					// Define the regular expression pattern to match text between "<" and ">"
+					String pattern = "<[^>]+>";
+					// remove all strings between < and > symbols
+					String originalActionItem = actionitem.replaceAll(pattern, "");
+					System.out.println(originalActionItem);
+					try {
+						actionsWriter.write(originalActionItem + "\n\n");
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				try {
+					actionsWriter.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				try {
+					generateActionItems(actionsFilePath, eventId);
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				eventIds.add(eventId);
+			});
+			flag = true;
+			//generate action items and pass the action items to action items microservice
+			if(flag) {
+				boolean isUpdated = false;
+				log.info("action items generated sucessfully for events "+eventIds.toString());
+				isUpdated = updateEventActionItemsStatus(eventIds, flag);
+				if(isUpdated == false) {
+					throw new BusinessException("error code", "error updating status of Event for Action Items");
+				}
 			}
-			try {
-				actionsWriter.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		});
-		
+		}catch (Exception e) {
+			e.printStackTrace();
+			flag = false;
+			log.info("Action items were not generated due to business exception "+e.getStackTrace().toString());
+			throw new BusinessException("error code", e.getStackTrace().toString());
+		}
 	}
 
 	// Helper method to check if a sentence contains a keyword
@@ -199,8 +227,7 @@ public class NlpServiceImpl implements NlpService {
 		return response.getBody();
 	}
 
-	@Override
-	public String SendToAction(List<ActionItemVO> actionItem) {
+	private String SendToAction(List<ActionItemVO> actionItem) {
 		// TODO Auto-generated method stub
 		
 		try {
@@ -220,15 +247,15 @@ public class NlpServiceImpl implements NlpService {
 		}
 	
 	}
-
-	@Override
-	public String generateActionItems() throws FileNotFoundException {
+	
+	private boolean generateActionItems(String actionItemsFilePath, Integer eventId) throws FileNotFoundException {
 		// TODO Auto-generated method stub
 		/*
 		 *  Reading the fetched Action Items file
 		 */
+		boolean flag = false;
 		ActionItemVO acItems_Data = null;
-		InputStream file_Line = new FileInputStream("ActionItems.txt"); 
+		InputStream file_Line = new FileInputStream(actionItemsFilePath); 
 		List<ActionItemVO> vo = new ArrayList<ActionItemVO>();
 		if(file_Line!=null) {
 			BufferedReader acReader = null;
@@ -241,11 +268,10 @@ public class NlpServiceImpl implements NlpService {
 				   */
 				  acReader = new BufferedReader(new InputStreamReader(file_Line));
 				  System.out.println(acReader.toString());
-				  int i=0;
 				  /*
 				   * Iterating the loop to check whether the line is empty
 				   */
-				  while((acItem=acReader.readLine())!=null) {
+				  while((acItem=acReader.readLine())!=null && acReader.readLine() != "") {
 					  
 					  String temp= acItem;
 					  /*
@@ -265,7 +291,7 @@ public class NlpServiceImpl implements NlpService {
 					  for(int j=0; j<temp_array.length;j++) {
 						  actionLine = temp_array[j];
 						  if(actionLine.isEmpty() == false) {
-							  acItems_Data = new ActionItemVO(1, temp_array[j],temp_array[j],null,null,null,null,null);	
+							  acItems_Data = new ActionItemVO(null, temp_array[j],temp_array[j],null,eventId,LocalDateTime.now(),null,"NotConverted");	
 							  vo.add(acItems_Data);
 						  }
 						  
@@ -274,23 +300,37 @@ public class NlpServiceImpl implements NlpService {
 				  }//while loop
 				  
 				  System.out.println(vo);
+				  //send generated action item from the transcript file to action items microservice and save in db
 				  SendToAction(vo);
-			        
+				  
+				  //close the reader
+			      acReader.close();
+			      
 			}catch (Exception e) {
-				// TODO: handle exception
-				System.out.println(e.getMessage());
-			
+				log.info("Error while generating action items for event "+eventId+" "+e.getStackTrace().toString());
+				throw new BusinessException("error code", e.getStackTrace().toString());
 			}//catch
-			
-	      
 		}
-		return  "Created";
-	}
-
-	@Override
-	public void generateActionItemsFromTranscript() {
-		// TODO Auto-generated method stub
+		try {
+			file_Line.close();
+		}catch (IOException e) {
+			log.info("input stream closed");
+		}
+		flag = true;
+		//if action items are generated, update the status of event to true for actionItemsGenerated
+		return  flag;
 		
+	}
+	
+	
+	private boolean updateEventActionItemsStatus(List<Integer> eventids, boolean isActionItemsGenerated) {
+		//communicate with batch processing microservice and set the status
+		boolean flag = false;
+		String eventIds = eventids.toString();
+		String batchProcessUrl = "http://UMS-BATCH-SERVICE/teams/events/status/"+eventIds+"/"+isActionItemsGenerated;
+		int isUpdated = restTemplate.getForObject(batchProcessUrl, Integer.class);
+		System.out.println(isUpdated);
+		return flag = true;
 	}
    
 }

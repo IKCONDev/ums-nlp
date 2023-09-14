@@ -1,7 +1,14 @@
 package com.ikn.ums.nlp.service;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
+
+import com.ikn.ums.nlp.VO.Event;
+
 public interface NlpService {
 	
-	void generateActionItemsFromTranscript();
+	List<Event> getAllEventsWithTranscripts();
+	void generateActionItemsForEvent(List<Event> eventsList) throws IOException, FileNotFoundException;
 
 }

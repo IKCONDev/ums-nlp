@@ -11,8 +11,8 @@ import com.ikn.ums.nlp.VO.ActionItemVO;
 
 public interface NlpService {
 	
-	List<Event> getAllEventsWithTranscripts();
-	void generateActionItemsForEvent(List<Event> eventsList) throws IOException, FileNotFoundException;
+	List<Event> getAllEventsWithTranscripts(String userId);
+	void filterActionItemsFromEventTranscript(List<Event> eventsList, String userId) throws IOException, FileNotFoundException;
 
 	//String SendToAction(List<ActionItemVO> actionItem);
 	//String  generateActionItems() throws FileNotFoundException;

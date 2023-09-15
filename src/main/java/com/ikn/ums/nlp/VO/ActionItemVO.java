@@ -27,5 +27,7 @@ public class ActionItemVO {
 	
 	private String actionStatus;
 	
+	private String userId;
+	
 
 }

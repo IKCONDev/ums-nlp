@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 public class NLPController {
 	
 	@Autowired
-
 	private NLPService nLPService;
 	
 	@GetMapping("/generate/{email}")
@@ -30,7 +29,7 @@ public class NLPController {
 		try {
 			//get events from batch processing microservice
 			System.out.println("NLPController.generateActionItemsForUserEvents() is under execution...");
-			List<Event> eventsList = nLPService.getAllEventsWithTranscripts(email);
+			List<Event> eventsList = nLPService.getAllEventsWithTranscripts(email);  // 1. Getting Meetings & 2. Transcripts
 			//send the events and generate action items from transcript
 			nLPService.filterActionItemsFromEventTranscript(eventsList, email);
 			log.info("NLPController.generateActionItemsForUserEvents() exited successfully");

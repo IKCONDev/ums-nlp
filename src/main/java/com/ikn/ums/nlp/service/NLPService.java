@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.ikn.ums.nlp.VO.ActionItemVO;
 
-public interface NlpService {
+public interface NLPService {
 	
 	List<Event> getAllEventsWithTranscripts(String userId);
 	void filterActionItemsFromEventTranscript(List<Event> eventsList, String userId) throws IOException, FileNotFoundException;

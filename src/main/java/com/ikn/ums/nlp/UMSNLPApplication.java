@@ -10,10 +10,10 @@ import org.springframework.web.client.RestTemplate;
 
 @SpringBootApplication
 
- public class umsnlpApplication {
+ public class UMSNLPApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(umsnlpApplication.class, args);
+		SpringApplication.run(UMSNLPApplication.class, args);
 	}
 	
 	@LoadBalanced

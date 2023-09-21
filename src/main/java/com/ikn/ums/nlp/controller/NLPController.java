@@ -11,32 +11,32 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.ikn.ums.nlp.VO.Event;
 import com.ikn.ums.nlp.exception.ControllerException;
-import com.ikn.ums.nlp.service.NlpService;
+import com.ikn.ums.nlp.service.NLPService;
 
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/nlp")
 @Slf4j
-public class NlpController {
+public class NLPController {
 	
 	@Autowired
 
-	private NlpService nlpService;
+	private NLPService nLPService;
 	
 	@GetMapping("/generate/{email}")
 	public ResponseEntity<?> generateActionItemsForUserEvents(@PathVariable String email){
-        log.info("NlpController.generateActionItemsForUserEvents() Entered with userId "+email);
+        log.info("NLPController.generateActionItemsForUserEvents() Entered with userId "+email);
 		try {
 			//get events from batch processing microservice
-			System.out.println("NlpController.generateActionItemsForUserEvents() is under execution...");
-			List<Event> eventsList = nlpService.getAllEventsWithTranscripts(email);
+			System.out.println("NLPController.generateActionItemsForUserEvents() is under execution...");
+			List<Event> eventsList = nLPService.getAllEventsWithTranscripts(email);
 			//send the events and generate action items from transcript
-			nlpService.filterActionItemsFromEventTranscript(eventsList, email);
-			log.info("NlpController.generateActionItemsForUserEvents() exited successfully");
+			nLPService.filterActionItemsFromEventTranscript(eventsList, email);
+			log.info("NLPController.generateActionItemsForUserEvents() exited successfully");
 			return new ResponseEntity<>(true, HttpStatus.OK);
 		}catch (Exception e) {
-            log.info("NlpController.generateActionItemsForUserEvents() exited with exception "+e.getMessage());
+            log.info("NLPController.generateActionItemsForUserEvents() exited with exception "+e.getMessage());
 			ControllerException umsCE = new ControllerException("error code", e.getStackTrace().toString());
 			return new ResponseEntity<>(umsCE, HttpStatus.OK);
 		}
@@ -52,7 +52,7 @@ public class NlpController {
 	public ResponseEntity<?> SendActionItemsToMicroservice(@RequestBody List<ActionItemVO> actionItems){
 		
 		try {
-			 String actions =nlpService.SendToAction(actionItems);
+			 String actions =nLPService.SendToAction(actionItems);
 			 return new ResponseEntity<>(actions,HttpStatus.OK);
 			
 		}catch (Exception e) {
@@ -65,7 +65,7 @@ public class NlpController {
 	public ResponseEntity<?> fetchTransctiptAndGenerateActions() throws FileNotFoundException{
 		
 		try {
-			String data = nlpService.generateActionItems();
+			String data = nLPService.generateActionItems();
 			return new ResponseEntity<>(data,HttpStatus.OK);
 		}catch (Exception e) {
 			// TODO: handle exception

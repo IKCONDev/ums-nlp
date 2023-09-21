@@ -28,7 +28,7 @@ import com.ikn.ums.nlp.model.EventTranscriptModel;
 import org.springframework.http.HttpEntity;
 
 import com.ikn.ums.nlp.VO.ActionItemVO;
-import com.ikn.ums.nlp.service.NlpService;
+import com.ikn.ums.nlp.service.NLPService;
 
 import lombok.extern.slf4j.Slf4j;
 import opennlp.tools.sentdetect.SentenceDetectorME;
@@ -39,7 +39,7 @@ import opennlp.tools.tokenize.TokenizerModel;
 
 @Service
 @Slf4j
-public class NlpServiceImpl implements NlpService {
+public class NLPServiceImpl implements NLPService {
 
 	@Autowired
 	private RestTemplate restTemplate;
@@ -48,7 +48,7 @@ public class NlpServiceImpl implements NlpService {
 	@Override
 	public void filterActionItemsFromEventTranscript(List<Event> eventsList, String userEmail) throws IOException, FileNotFoundException {
 		
-		log.info("NlpServiceImpl.generateActionItemsForEvent() Entered with events "+eventsList+" of user "+userEmail);
+		log.info("NLPServiceImpl.generateActionItemsForEvent() Entered with events "+eventsList+" of user "+userEmail);
 		boolean flag = false;
 		List<EventTranscriptModel> eventWithTranscriptModelList = getTranscriptsOfEvents(eventsList);
 		List<Integer> eventIds = new ArrayList<>();
@@ -208,7 +208,7 @@ public class NlpServiceImpl implements NlpService {
 	// get the events with trasncripts for which the action items are not generated
 	@Override
 	public List<Event> getAllEventsWithTranscripts(String userId) {
-		log.info("NlpServiceImpl.getAllEventsWithTranscripts()");
+		log.info("NLPServiceImpl.getAllEventsWithTranscripts()");
 		ResponseEntity<List<Event>> response = restTemplate.exchange("http://UMS-BATCH-SERVICE/teams/events/"+userId,
 				HttpMethod.GET, null, new ParameterizedTypeReference<List<Event>>() {
 				});
@@ -219,7 +219,7 @@ public class NlpServiceImpl implements NlpService {
 	}
 
 	private String SendToAction(List<ActionItemVO> actionItem) {
-		log.info("NlpServiceImpl.SendToAction() Entered with action Items "+actionItem);
+		log.info("NLPServiceImpl.SendToAction() Entered with action Items "+actionItem);
 		// TODO Auto-generated method stub
 
 		try {
@@ -229,10 +229,10 @@ public class NlpServiceImpl implements NlpService {
 					Boolean.class);
 
 			String res = "Created ActionItems in DB";
-			log.info("NlpServiceImpl.SendToAction() Exited Sucessfully");
+			log.info("NLPServiceImpl.SendToAction() Exited Sucessfully");
 			return res;
 		} catch (Exception e) {
-			log.info("NlpServiceImpl.SendToAction() Exited with Exception");
+			log.info("NLPServiceImpl.SendToAction() Exited with Exception");
 			//e.printStackTrace();
 			return e.getMessage();
 
@@ -241,7 +241,7 @@ public class NlpServiceImpl implements NlpService {
 	}
 
 	private boolean generateActionItems(String actionItemsFilePath, Integer eventId, String userEmail) throws FileNotFoundException {
-		log.info("NlpServiceImpl.generateActionItems() Entered");
+		log.info("NLPServiceImpl.generateActionItems() Entered");
 		boolean flag = false;
 		ActionItemVO acItems_Data = null;
 		InputStream file_Line = new FileInputStream(actionItemsFilePath);
@@ -310,7 +310,7 @@ public class NlpServiceImpl implements NlpService {
 		flag = true;
 		// if action items are generated, update the status of event to true for
 		// actionItemsGenerated
-		log.info("NlpServiceImpl.generateActionItems() Exit");
+		log.info("NLPServiceImpl.generateActionItems() Exit");
 		return flag;
 	}
 

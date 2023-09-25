@@ -13,7 +13,7 @@ public class Attendee {
 	private String type;
 	private String status;
 	private String email;
-    private Event event;
+    private Meeting meeting;
 	private Integer userId;
 
 }

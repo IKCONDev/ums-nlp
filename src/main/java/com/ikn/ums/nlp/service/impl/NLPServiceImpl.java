@@ -16,18 +16,18 @@ import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import com.ikn.ums.nlp.VO.Event;
-import com.ikn.ums.nlp.exception.BusinessException;
-import com.ikn.ums.nlp.exception.ErrorCodeMessages;
-import com.ikn.ums.nlp.model.EventTranscriptModel;
-
-import org.springframework.http.HttpEntity;
 
 import com.ikn.ums.nlp.VO.ActionItemVO;
+import com.ikn.ums.nlp.VO.Meeting;
+import com.ikn.ums.nlp.exception.BusinessException;
+import com.ikn.ums.nlp.exception.EmptyListException;
+import com.ikn.ums.nlp.exception.ErrorCodeMessages;
+import com.ikn.ums.nlp.model.MeetingTranscriptModel;
 import com.ikn.ums.nlp.service.NLPService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -46,19 +46,28 @@ public class NLPServiceImpl implements NLPService {
 
 	@Transactional
 	@Override
-	public void filterActionItemsFromEventTranscript(List<Event> eventsList, String userEmail) throws IOException, FileNotFoundException {
+	public void getActionItemsFromMeetingTranscript(List<Meeting> meetingList, String emailId)
+			throws IOException, FileNotFoundException {
+
+		log.info("NLPServiceImpl.getActionItemsFromMeetingTranscript() Entered with events " + meetingList + " of user "
+				+ emailId);
 		
-		log.info("NLPServiceImpl.generateActionItemsForEvent() Entered with events "+eventsList+" of user "+userEmail);
+//		1. Meeting details save
+//		2. Meeting ki related attendees save
+//		3. Meeting ki related transcript read chesi, action items generate cheyali
+		//****save meeting data, save attendess data , read transcript and save action items data
+//		retrieveAttendeesListForMeeting(); map( meetingId, list of attendees)
+//		retrieveTranscrpitForUserIdFromMeetingList
+		
 		boolean flag = false;
-		List<EventTranscriptModel> eventWithTranscriptModelList = getTranscriptsOfEvents(eventsList);
-		List<Integer> eventIds = new ArrayList<>();
+		List<MeetingTranscriptModel> listMeetingTranscriptModel = getTranscriptForEachMeeting(meetingList);
+				
+		List<Integer> meetingIds = new ArrayList<>();
 		// generate action items for each event
 		// Integer eventId = 0;
-		eventWithTranscriptModelList.forEach(eventWithTranscript -> {
-			int eventId = eventWithTranscript.getEventId();
-			String transcriptContent = eventWithTranscript.getTranscriptContent();
-
-			//
+		listMeetingTranscriptModel.forEach( meetingWithTranscript -> {
+			int meetingId = meetingWithTranscript.getMeetingId();
+			String transcriptContent = meetingWithTranscript.getTranscriptContent();
 			// Fetch keywords from the file
 			String keywordsFilePath = "Keywords.txt";
 			BufferedReader keywordsReader = null;
@@ -129,7 +138,7 @@ public class NLPServiceImpl implements NLPService {
 			}
 
 			// Print the extracted acitems and write them to a file
-			String actionsFilePath = "actions-items" + eventId + ".txt";
+			String actionsFilePath = "actions-items" + meetingId + ".txt";
 			FileWriter actionsWriter = null;
 			try {
 				actionsWriter = new FileWriter(actionsFilePath);
@@ -157,18 +166,18 @@ public class NLPServiceImpl implements NLPService {
 				e.printStackTrace();
 			}
 			try {
-				generateActionItems(actionsFilePath, eventId, userEmail);
+				generateActionItems(actionsFilePath, meetingId, emailId);
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			eventIds.add(eventId);
+			meetingIds.add(meetingId);
 		});
 		flag = true;
 		// generate action items and pass the action items to action items microservice
 		if (flag) {
-			log.info("action items generated sucessfully for events " + eventIds.toString());
-			int isUpdated = updateEventActionItemsStatus(eventIds, flag);
+			log.info("action items generated sucessfully for events " + meetingIds.toString());
+			int isUpdated = updateEventActionItemsStatus(meetingIds, flag);
 		}
 	}
 
@@ -180,46 +189,69 @@ public class NLPServiceImpl implements NLPService {
 		return false;
 	}
 
-	private List<EventTranscriptModel> getTranscriptsOfEvents(List<Event> eventsList) {
-		List<EventTranscriptModel> eventWithTranscriptModelList = new ArrayList<>();
-		eventsList.forEach(event -> {
-
+	/**
+	 * This method retrieves the Transcript for all the meetings. Each meeting is mapped with its multiple Transcripts.
+	 * @param eventsList
+	 * @return
+	 */
+	private List<MeetingTranscriptModel> getTranscriptForEachMeeting(List<Meeting> meetingList) {
+		
+		List<MeetingTranscriptModel> listMeetingTranscriptModel = new ArrayList<>();
+		meetingList.forEach(meeting -> {
+			MeetingTranscriptModel meetingTranscriptModel = new MeetingTranscriptModel();
+			meetingTranscriptModel.setMeetingId( meeting.getId() );
+			meetingTranscriptModel.setAttendeesList( meeting.getAttendees() );
 			// if event contains transcript fetch it and provide it to NLP for generating
 			// action items
-			if (event.getMeetingTranscripts().size() > 0) {
+			if (meeting.getMeetingTranscripts().size() > 0) {
 				StringBuilder transcriptContentBuilder = new StringBuilder();
-				event.getMeetingTranscripts().forEach(transcript -> {
+				meeting.getMeetingTranscripts().forEach(transcript -> {
 					transcriptContentBuilder.append(transcript.getTranscriptContent());
-
 					// This object contains the event id and its transcript content
-					EventTranscriptModel transcriptOfEvent = new EventTranscriptModel();
-					transcriptOfEvent.setEventId(event.getId());
-					transcriptOfEvent.setTranscriptContent(transcriptContentBuilder.toString());
+					meetingTranscriptModel.setTranscriptContent(transcriptContentBuilder.toString());
 					// System.out.println(transcriptOfEvent);
 					// add the object to list
-					eventWithTranscriptModelList.add(transcriptOfEvent);
+					listMeetingTranscriptModel.add(meetingTranscriptModel);
 				});
 			} // if
 		});// foreach
-		System.out.println("------>" + eventWithTranscriptModelList);
-		return eventWithTranscriptModelList;
+		return listMeetingTranscriptModel;
 	}
 
-	// get the events with trasncripts for which the action items are not generated
+	/**
+	 * getAllMeetingsWithTranscripts method returns all the meetings details for any particular user.
+	 */
 	@Override
-	public List<Event> getAllEventsWithTranscripts(String userId) {
-		log.info("NLPServiceImpl.getAllEventsWithTranscripts()");
-		ResponseEntity<List<Event>> response = restTemplate.exchange("http://UMS-BATCH-SERVICE/teams/events/"+userId,
-				HttpMethod.GET, null, new ParameterizedTypeReference<List<Event>>() {
+	public List<Meeting> getMeetingsListWithAttendeesAndTranscriptForUserId(String userId) {
+		log.info("NLPServiceImpl.getMeetingsListWithAttendeesAndTranscriptForUserId()");
+
+		List<Meeting> meetingListForUserId = new ArrayList<Meeting>();
+		log.info("Call to UMS-BATCH-SERVICE/teams/events/ Microservice initiated.");
+		/**
+		 * The below REST service is called to get the meetings details of the particular Employee by passing the email id which is user Id. 
+		 * The below method will call the Batch Service, by passing UserId, to get all the Events(meetings), Attendees and Transcript from 
+		 * MS Teams Source Data. 
+		 * NOTE: Meetings are termed as Events in the Microsoft Teams. The event contains the meetings.
+		 * 
+		 * @userId ~ emailId of the Employee
+		 */
+		ResponseEntity<List<Meeting>> response = restTemplate.exchange(
+				"http://UMS-BATCH-SERVICE/teams/events/" + userId, HttpMethod.GET, null,
+				new ParameterizedTypeReference<List<Meeting>>() {
 				});
 		if (response.getBody() == null) {
-			throw new BusinessException("error code", "Events List is null");
+			log.info("NLPServiceImpl.getMeetingsListWithAttendeesAndTranscriptForUserId() : Events List for User Id/Email Id : " + userId
+					+ " : is empty. ");
+			throw new EmptyListException(ErrorCodeMessages.ERR_NLP_MSTEAMS_EVENTS_NOT_FOUND_CODE,
+					ErrorCodeMessages.ERR_NLP_MSTEAMS_EVENTS_NOT_FOUND_MSG);
 		}
-		return response.getBody();
+		log.info("Call to UMS-BATCH-SERVICE/teams/events/ Microservice Completed.");
+		meetingListForUserId = response.getBody(); //Will return the list of meetings
+		return meetingListForUserId;
 	}
 
 	private String SendToAction(List<ActionItemVO> actionItem) {
-		log.info("NLPServiceImpl.SendToAction() Entered with action Items "+actionItem);
+		log.info("NLPServiceImpl.SendToAction() Entered with action Items " + actionItem);
 		// TODO Auto-generated method stub
 
 		try {
@@ -233,14 +265,15 @@ public class NLPServiceImpl implements NLPService {
 			return res;
 		} catch (Exception e) {
 			log.info("NLPServiceImpl.SendToAction() Exited with Exception");
-			//e.printStackTrace();
+			// e.printStackTrace();
 			return e.getMessage();
 
 		}
 
 	}
 
-	private boolean generateActionItems(String actionItemsFilePath, Integer eventId, String userEmail) throws FileNotFoundException {
+	private boolean generateActionItems(String actionItemsFilePath, Integer eventId, String userEmail)
+			throws FileNotFoundException {
 		log.info("NLPServiceImpl.generateActionItems() Entered");
 		boolean flag = false;
 		ActionItemVO acItems_Data = null;
@@ -279,9 +312,12 @@ public class NLPServiceImpl implements NLPService {
 					for (int j = 0; j < temp_array.length; j++) {
 						actionLine = temp_array[j];
 						if (actionLine.isEmpty() == false) {
-							acItems_Data = new ActionItemVO(null, temp_array[j], temp_array[j], null, eventId,
-									LocalDateTime.now(), null, "NotConverted", userEmail);
-							vo.add(acItems_Data);
+							
+							//TODO: Update the Constructor of ActionItemVO
+							
+//							acItems_Data = new ActionItemVO(null, temp_array[j], temp_array[j], null, eventId,
+//									LocalDateTime.now(), null, "NotConverted", userEmail);
+//							vo.add(acItems_Data);
 						}
 
 					} // for loop
@@ -328,8 +364,8 @@ public class NLPServiceImpl implements NLPService {
 						Integer.class);
 				result = responseEntity.getBody();
 			} catch (Exception e) {
-				throw new BusinessException(ErrorCodeMessages.ERR_BATCH_SERVICE_NOT_FOUND_CODE,
-						ErrorCodeMessages.ERR_BATCH_SERVICE_NOT_FOUND_MSG);
+				throw new BusinessException(ErrorCodeMessages.ERR_NLP_MSTEAMS_BATCH_SERVICE_NOT_FOUND_CODE,
+						ErrorCodeMessages.ERR_NLP_MSTEAMS_BATCH_SERVICE_NOT_FOUND_MSG);
 			}
 		}
 		return result;

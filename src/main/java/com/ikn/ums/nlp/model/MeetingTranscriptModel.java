@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MeetingTranscriptModel {
 	
-	private Integer meetingId;
+	private Long meetingId;
 	private Set<Attendee> attendeesList;
 	private String transcriptContent;
 

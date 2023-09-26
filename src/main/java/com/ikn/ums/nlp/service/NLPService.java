@@ -7,7 +7,7 @@ import java.util.List;
 import com.ikn.ums.nlp.VO.Meeting;
 import java.util.List;
 
-import com.ikn.ums.nlp.VO.ActionItemVO;
+import com.ikn.ums.nlp.VO.ActionItem;
 
 public interface NLPService {
 	

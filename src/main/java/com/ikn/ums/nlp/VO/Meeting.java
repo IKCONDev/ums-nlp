@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Meeting {
 
-	private Integer id;
+	private Long meetingId;
 	private String eventId;
 	private String createdDateTime;
 	private String originalStartTimeZone;

@@ -9,11 +9,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ActionItemVO {
+public class ActionItem {
 	
 	private Integer actionItemId;
-	private String eventId;
-	private String meetingId;
+	private Long meetingId;
 	private String emailId;
 	private String actionItemOwner;
 	private String actionItemTitle;

@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -22,8 +23,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.ikn.ums.nlp.VO.ActionItemVO;
+import com.ikn.ums.nlp.VO.ActionItem;
 import com.ikn.ums.nlp.VO.Attendee;
+//github.com/IKCONDev/ums-nlp.git
 import com.ikn.ums.nlp.VO.Meeting;
 import com.ikn.ums.nlp.exception.BusinessException;
 import com.ikn.ums.nlp.exception.EmptyListException;
@@ -31,6 +33,7 @@ import com.ikn.ums.nlp.exception.ErrorCodeMessages;
 import com.ikn.ums.nlp.exception.InputFileNotFoundException;
 import com.ikn.ums.nlp.exception.NoDataFoundInFileException;
 import com.ikn.ums.nlp.model.MeetingModel;
+import com.ikn.ums.nlp.model.MeetingTranscriptModel;
 import com.ikn.ums.nlp.service.NLPService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -66,15 +69,15 @@ public class NLPServiceImpl implements NLPService {
 		boolean flag = false;
 		List<MeetingModel> listMeetingModel = getTranscriptAndAttendeesForEachMeeting(meetingList);
 
-		List<Integer> meetingIds = new ArrayList<>();
+		List<Long> meetingIds = new ArrayList<>();
+				
 		// generate action items for each event
 		// Integer eventId = 0;
 		listMeetingModel.forEach(meetingModel -> {
-			int meetingId = meetingModel.getMeetingId();
-
+			Long meetingId = meetingModel.getMeetingId();
 			String transcriptContent = meetingModel.getTranscriptContent();
-			Set<Attendee> attendeesList = meetingModel.getAttendeesList();
 
+			Set<Attendee> attendeesList = meetingModel.getAttendeesList();
 			// Fetch keywords from the file
 			String keywordsFilePath = ErrorCodeMessages.KEY_WORDS_FILE_NAME;
 			BufferedReader keywordsReader = null;
@@ -183,13 +186,16 @@ public class NLPServiceImpl implements NLPService {
 			}
 			meetingIds.add(meetingId);
 		});
+			
 		flag = true;
 		// generate action items and pass the action items to action items microservice
 		if (flag) {
 			log.info("action items generated sucessfully for events " + meetingIds.toString());
 			int isUpdated = updateEventActionItemsStatus(meetingIds, flag);
 		}
+	
 	}
+		
 
 	// Helper method to check if a sentence contains a keyword
 	private static boolean containsKeyword(String words, String keyword) {
@@ -211,8 +217,11 @@ public class NLPServiceImpl implements NLPService {
 		List<MeetingModel> listMeetingTranscriptModel = new ArrayList<>();
 		meetingList.forEach(meeting -> {
 			MeetingModel meetingModel = new MeetingModel();
-			meetingModel.setMeetingId(meeting.getId());
+			meetingModel.setMeetingId(meeting.getMeetingId());
 			meetingModel.setAttendeesList(meeting.getAttendees());
+			MeetingTranscriptModel meetingTranscriptModel = new MeetingTranscriptModel();
+			meetingTranscriptModel.setMeetingId( meeting.getMeetingId() );
+			meetingTranscriptModel.setAttendeesList( meeting.getAttendees() );
 			// if event contains transcript fetch it and provide it to NLP for generating
 			// action items
 			if (meeting.getMeetingTranscripts().size() > 0) {
@@ -237,7 +246,6 @@ public class NLPServiceImpl implements NLPService {
 	@Override
 	public List<Meeting> getMeetingsListWithAttendeesAndTranscriptForUserId(String userId) {
 		log.info("NLPServiceImpl.getMeetingsListWithAttendeesAndTranscriptForUserId()");
-
 		List<Meeting> meetingListForUserId = new ArrayList<Meeting>();
 		log.info("Call to UMS-BATCH-SERVICE/teams/events/ Microservice initiated.");
 		/**
@@ -247,8 +255,13 @@ public class NLPServiceImpl implements NLPService {
 		 * Events(meetings), Attendees and Transcript from MS Teams Source Data. NOTE:
 		 * Meetings are termed as Events in the Microsoft Teams. The event contains the
 		 * meetings.
+=======
+		 * The below REST service is called to get the meetings details of the particular User by passing the email id which is user Id. 
+		 * The below method will call the Batch Service, by passing UserId, to get all the Events(meetings), Attendees and Transcript from 
+		 * MS Teams Source Data. 
+		 * NOTE: Meetings are termed as Events in the Microsoft Teams. The event contains the meetings.
 		 * 
-		 * @userId ~ emailId of the Employee
+		 * @userId ~ emailId of the User
 		 */
 		ResponseEntity<List<Meeting>> response = restTemplate.exchange(
 				"http://UMS-BATCH-SERVICE/teams/events/" + userId, HttpMethod.GET, null,
@@ -263,10 +276,12 @@ public class NLPServiceImpl implements NLPService {
 		}
 		log.info("Call to UMS-BATCH-SERVICE/teams/events/ Microservice Completed.");
 		meetingListForUserId = response.getBody(); // Will return the list of meetings
+		meetingListForUserId = response.getBody(); //Will return the list of meetings from batch-service database
+		//property names are different, so map event to meeting
 		return meetingListForUserId;
 	}
 
-	private String SendToAction(List<ActionItemVO> actionItem) {
+	private String SendToAction(List<ActionItem> actionItem) {
 		log.info("NLPServiceImpl.SendToAction() Entered with action Items " + actionItem);
 		// TODO Auto-generated method stub
 
@@ -288,13 +303,13 @@ public class NLPServiceImpl implements NLPService {
 
 	}
 
-	private boolean generateActionItems(String actionItemsFilePath, Integer eventId, String userEmail)
+	private boolean generateActionItems(String actionItemsFilePath, Long meetingId, String userEmail)
 			throws FileNotFoundException {
 		log.info("NLPServiceImpl.generateActionItems() Entered");
 		boolean flag = false;
-		ActionItemVO acItems_Data = null;
+		ActionItem acItems_Data = null;
 		InputStream file_Line = new FileInputStream(actionItemsFilePath);
-		List<ActionItemVO> vo = new ArrayList<ActionItemVO>();
+		List<ActionItem> vo = new ArrayList<ActionItem>();
 		if (file_Line != null) {
 			BufferedReader acReader = null;
 			String acItem = null;
@@ -333,6 +348,7 @@ public class NLPServiceImpl implements NLPService {
 
 //							acItems_Data = new ActionItemVO(null, temp_array[j], temp_array[j], null, eventId,
 //									LocalDateTime.now(), null, "NotConverted", userEmail);
+							acItems_Data = new ActionItem(null,meetingId,userEmail,null,temp_array[j],temp_array[j],null,"NotConverted",LocalDateTime.now(),null);
 //							vo.add(acItems_Data);
 						}
 
@@ -349,7 +365,7 @@ public class NLPServiceImpl implements NLPService {
 				acReader.close();
 
 			} catch (Exception e) {
-				log.info("Error while generating action items for event " + eventId + " "
+				log.info("Error while generating action items for meeting " + meetingId + " "
 						+ e.getStackTrace().toString());
 				throw new BusinessException("error code", e.getStackTrace().toString());
 			} // catch
@@ -366,13 +382,13 @@ public class NLPServiceImpl implements NLPService {
 		return flag;
 	}
 
-	private Integer updateEventActionItemsStatus(List<Integer> eventids, boolean isActionItemsGenerated) {
+	private Integer updateEventActionItemsStatus(List<Long> meetingids, boolean isActionItemsGenerated) {
 		// communicate with batch processing microservice and set the status
 		boolean flag = false;
 		int result = 0;
-		String eventIds = eventids.toString();
-		if (eventids.size() > 0) {
-			String batchProcessUrl = "http://UMS-BATCH-SERVICE/teams/events/status/" + eventIds + "/"
+		String meetingIds = meetingids.toString();
+		if (meetingids.size() > 0) {
+			String batchProcessUrl = "http://UMS-BATCH-SERVICE/teams/events/status/" + meetingIds + "/"
 					+ isActionItemsGenerated;
 
 			try {
@@ -386,4 +402,5 @@ public class NLPServiceImpl implements NLPService {
 		}
 		return result;
 	}
-}
+
+	}

@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -317,6 +318,7 @@ public class NLPServiceImpl implements NLPService {
 							
 //							acItems_Data = new ActionItemVO(null, temp_array[j], temp_array[j], null, eventId,
 //									LocalDateTime.now(), null, "NotConverted", userEmail);
+							acItems_Data = new ActionItem(null,meetingId,userEmail,null,temp_array[j],temp_array[j],null,"NotConverted",LocalDateTime.now(),null);
 //							vo.add(acItems_Data);
 						}
 

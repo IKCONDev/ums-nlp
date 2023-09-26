@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class ActionItem {
 	
 	private Integer actionItemId;
-	private Integer meetingId;
+	private Long meetingId;
 	private String emailId;
 	private String actionItemOwner;
 	private String actionItemTitle;

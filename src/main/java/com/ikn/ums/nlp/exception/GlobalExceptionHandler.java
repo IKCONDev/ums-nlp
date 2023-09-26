@@ -1,5 +1,6 @@
 package com.ikn.ums.nlp.exception;
 
+import java.io.FileNotFoundException;
 import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpHeaders;
@@ -41,6 +42,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return new ResponseEntity<String>("Input field is empty. Please look into it.", HttpStatus.BAD_REQUEST);
 	}
 
+	/**
+	 * The InputFileNotFoundException is a Custom Exception (created by us) written for
+	 * handling the Business Scenarios. defined
+	 * @param emptyInputException
+	 * @return
+	 */
+	@ExceptionHandler(InputFileNotFoundException.class)
+	public ResponseEntity<String> handleInputFileNotFoundException(InputFileNotFoundException inputFileNotFoundException) {
+		log.info("GlobalExceptionHandler.handleInputFileNotFoundException() ENTERED" + inputFileNotFoundException.getMessage());
+		return new ResponseEntity<String>("Input File Not Found. Please look into it.", HttpStatus.BAD_REQUEST);
+	}
+
+	/**
+	 * The EmptyInputException is a Custom Exception (created by us) written for
+	 * handling the Business Scenarios. defined
+	 * @param emptyInputException
+	 * @return
+	 */
+	@ExceptionHandler(NoDataFoundInFileException.class)
+	public ResponseEntity<String> handleEmptyInput(NoDataFoundInFileException noDataFoundInFileException) {
+		log.info("GlobalExceptionHandler.handleEmptyInput() ENTERED" + noDataFoundInFileException.getMessage());
+		return new ResponseEntity<String>("No Data Found in the Input File. Please look into it.", HttpStatus.BAD_REQUEST);
+	}
+	
 	/**
 	 * The NoSuchElementException is a Pre-defined default handler for the
 	 * SpringBoot. No class required to be created for pre-defined.

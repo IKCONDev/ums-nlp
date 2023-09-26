@@ -8,9 +8,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.transaction.Transactional;
 
@@ -23,11 +23,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.ikn.ums.nlp.VO.ActionItemVO;
+import com.ikn.ums.nlp.VO.Attendee;
 import com.ikn.ums.nlp.VO.Meeting;
 import com.ikn.ums.nlp.exception.BusinessException;
 import com.ikn.ums.nlp.exception.EmptyListException;
 import com.ikn.ums.nlp.exception.ErrorCodeMessages;
-import com.ikn.ums.nlp.model.MeetingTranscriptModel;
+import com.ikn.ums.nlp.exception.InputFileNotFoundException;
+import com.ikn.ums.nlp.exception.NoDataFoundInFileException;
+import com.ikn.ums.nlp.model.MeetingModel;
 import com.ikn.ums.nlp.service.NLPService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -51,35 +54,45 @@ public class NLPServiceImpl implements NLPService {
 
 		log.info("NLPServiceImpl.getActionItemsFromMeetingTranscript() Entered with events " + meetingList + " of user "
 				+ emailId);
-		
+
 //		1. Meeting details save
 //		2. Meeting ki related attendees save
 //		3. Meeting ki related transcript read chesi, action items generate cheyali
-		//****save meeting data, save attendess data , read transcript and save action items data
+		// ****save meeting data, save attendess data , read transcript and save action
+		// items data
 //		retrieveAttendeesListForMeeting(); map( meetingId, list of attendees)
 //		retrieveTranscrpitForUserIdFromMeetingList
-		
+
 		boolean flag = false;
-		List<MeetingTranscriptModel> listMeetingTranscriptModel = getTranscriptForEachMeeting(meetingList);
-				
+		List<MeetingModel> listMeetingModel = getTranscriptAndAttendeesForEachMeeting(meetingList);
+
 		List<Integer> meetingIds = new ArrayList<>();
 		// generate action items for each event
 		// Integer eventId = 0;
-		listMeetingTranscriptModel.forEach( meetingWithTranscript -> {
-			int meetingId = meetingWithTranscript.getMeetingId();
-			String transcriptContent = meetingWithTranscript.getTranscriptContent();
+		listMeetingModel.forEach(meetingModel -> {
+			int meetingId = meetingModel.getMeetingId();
+
+			String transcriptContent = meetingModel.getTranscriptContent();
+			Set<Attendee> attendeesList = meetingModel.getAttendeesList();
+
 			// Fetch keywords from the file
-			String keywordsFilePath = "Keywords.txt";
+			String keywordsFilePath = ErrorCodeMessages.KEY_WORDS_FILE_NAME;
 			BufferedReader keywordsReader = null;
 			try {
 				keywordsReader = new BufferedReader(new FileReader(keywordsFilePath));
 			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.info("The Input File Not Found Exception while reading the Keywords.txt file : " + e.getMessage());
+				throw new InputFileNotFoundException(ErrorCodeMessages.ERR_NLP_INPUTFILE_NOT_FOUND_CODE,
+						ErrorCodeMessages.ERR_NLP_INPUTFILE_NOT_FOUND_MSG);
 			}
 			List<String> keywords = new ArrayList<>();
 			String keyword;
 			try {
+				if (keywordsReader.toString().length() == 0 || keywordsReader.toString().isEmpty()) {
+					keywordsReader.close();
+					throw new NoDataFoundInFileException(ErrorCodeMessages.ERR_NLP_INPUT_FILE_NO_DATA_FOUND_CODE,
+							ErrorCodeMessages.ERR_NLP_INPUT_FILE_NO_DATA_FOUND_MSG);
+				}
 				while ((keyword = keywordsReader.readLine()) != null) {
 					keywords.add(keyword.toLowerCase());
 				}
@@ -93,7 +106,6 @@ public class NLPServiceImpl implements NLPService {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
 			// Tokenize the transcript into sentences
 			SentenceModel sentenceModel = null;
 			try {
@@ -126,7 +138,6 @@ public class NLPServiceImpl implements NLPService {
 			for (String sentence : sentences) {
 				sentence = sentence.toLowerCase(); // Convert the sentence to lowercase
 				// String[] words = tokenizer.tokenize(sentence);
-
 				// Check if any of the keywords are in the sentence
 				for (String keyword1 : keywords) {
 					if (containsKeyword(sentence, keyword1)) {
@@ -136,7 +147,6 @@ public class NLPServiceImpl implements NLPService {
 					}
 				}
 			}
-
 			// Print the extracted acitems and write them to a file
 			String actionsFilePath = "actions-items" + meetingId + ".txt";
 			FileWriter actionsWriter = null;
@@ -190,17 +200,19 @@ public class NLPServiceImpl implements NLPService {
 	}
 
 	/**
-	 * This method retrieves the Transcript for all the meetings. Each meeting is mapped with its multiple Transcripts.
+	 * This method retrieves the Transcript for all the meetings. Each meeting is
+	 * mapped with its multiple Transcripts.
+	 * 
 	 * @param eventsList
 	 * @return
 	 */
-	private List<MeetingTranscriptModel> getTranscriptForEachMeeting(List<Meeting> meetingList) {
-		
-		List<MeetingTranscriptModel> listMeetingTranscriptModel = new ArrayList<>();
+	private List<MeetingModel> getTranscriptAndAttendeesForEachMeeting(List<Meeting> meetingList) {
+
+		List<MeetingModel> listMeetingTranscriptModel = new ArrayList<>();
 		meetingList.forEach(meeting -> {
-			MeetingTranscriptModel meetingTranscriptModel = new MeetingTranscriptModel();
-			meetingTranscriptModel.setMeetingId( meeting.getId() );
-			meetingTranscriptModel.setAttendeesList( meeting.getAttendees() );
+			MeetingModel meetingModel = new MeetingModel();
+			meetingModel.setMeetingId(meeting.getId());
+			meetingModel.setAttendeesList(meeting.getAttendees());
 			// if event contains transcript fetch it and provide it to NLP for generating
 			// action items
 			if (meeting.getMeetingTranscripts().size() > 0) {
@@ -208,10 +220,10 @@ public class NLPServiceImpl implements NLPService {
 				meeting.getMeetingTranscripts().forEach(transcript -> {
 					transcriptContentBuilder.append(transcript.getTranscriptContent());
 					// This object contains the event id and its transcript content
-					meetingTranscriptModel.setTranscriptContent(transcriptContentBuilder.toString());
+					meetingModel.setTranscriptContent(transcriptContentBuilder.toString());
 					// System.out.println(transcriptOfEvent);
 					// add the object to list
-					listMeetingTranscriptModel.add(meetingTranscriptModel);
+					listMeetingTranscriptModel.add(meetingModel);
 				});
 			} // if
 		});// foreach
@@ -219,7 +231,8 @@ public class NLPServiceImpl implements NLPService {
 	}
 
 	/**
-	 * getAllMeetingsWithTranscripts method returns all the meetings details for any particular user.
+	 * getAllMeetingsWithTranscripts method returns all the meetings details for any
+	 * particular user.
 	 */
 	@Override
 	public List<Meeting> getMeetingsListWithAttendeesAndTranscriptForUserId(String userId) {
@@ -228,10 +241,12 @@ public class NLPServiceImpl implements NLPService {
 		List<Meeting> meetingListForUserId = new ArrayList<Meeting>();
 		log.info("Call to UMS-BATCH-SERVICE/teams/events/ Microservice initiated.");
 		/**
-		 * The below REST service is called to get the meetings details of the particular Employee by passing the email id which is user Id. 
-		 * The below method will call the Batch Service, by passing UserId, to get all the Events(meetings), Attendees and Transcript from 
-		 * MS Teams Source Data. 
-		 * NOTE: Meetings are termed as Events in the Microsoft Teams. The event contains the meetings.
+		 * The below REST service is called to get the meetings details of the
+		 * particular Employee by passing the email id which is user Id. The below
+		 * method will call the Batch Service, by passing UserId, to get all the
+		 * Events(meetings), Attendees and Transcript from MS Teams Source Data. NOTE:
+		 * Meetings are termed as Events in the Microsoft Teams. The event contains the
+		 * meetings.
 		 * 
 		 * @userId ~ emailId of the Employee
 		 */
@@ -240,13 +255,14 @@ public class NLPServiceImpl implements NLPService {
 				new ParameterizedTypeReference<List<Meeting>>() {
 				});
 		if (response.getBody() == null) {
-			log.info("NLPServiceImpl.getMeetingsListWithAttendeesAndTranscriptForUserId() : Events List for User Id/Email Id : " + userId
-					+ " : is empty. ");
+			log.info(
+					"NLPServiceImpl.getMeetingsListWithAttendeesAndTranscriptForUserId() : Events List for User Id/Email Id : "
+							+ userId + " : is empty. ");
 			throw new EmptyListException(ErrorCodeMessages.ERR_NLP_MSTEAMS_EVENTS_NOT_FOUND_CODE,
 					ErrorCodeMessages.ERR_NLP_MSTEAMS_EVENTS_NOT_FOUND_MSG);
 		}
 		log.info("Call to UMS-BATCH-SERVICE/teams/events/ Microservice Completed.");
-		meetingListForUserId = response.getBody(); //Will return the list of meetings
+		meetingListForUserId = response.getBody(); // Will return the list of meetings
 		return meetingListForUserId;
 	}
 
@@ -312,9 +328,9 @@ public class NLPServiceImpl implements NLPService {
 					for (int j = 0; j < temp_array.length; j++) {
 						actionLine = temp_array[j];
 						if (actionLine.isEmpty() == false) {
-							
-							//TODO: Update the Constructor of ActionItemVO
-							
+
+							// TODO: Update the Constructor of ActionItemVO
+
 //							acItems_Data = new ActionItemVO(null, temp_array[j], temp_array[j], null, eventId,
 //									LocalDateTime.now(), null, "NotConverted", userEmail);
 //							vo.add(acItems_Data);

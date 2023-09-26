@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class MeetingTranscriptModel {
+public class MeetingModel {
 	
 	private Integer meetingId;
 	private Set<Attendee> attendeesList;

@@ -32,6 +32,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Event {
 	
+	//meetID
 	private Long meetingId;
 	
 	private String eventId;

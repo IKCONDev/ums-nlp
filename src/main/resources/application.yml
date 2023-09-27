@@ -6,7 +6,7 @@ spring:
     name: UMS-NLP-SERVICE
   datasource:
     driver-class-name: org.postgresql.Driver
-    password: root
+    password: manager
     url: jdbc:postgresql://localhost:5432/authentication
     username: postgres
   devtools:

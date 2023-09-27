@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Transcript {
 	
-	private Integer id;
+	private Long id;
 	private String transcriptId;
 	private String meetingId;
 	private String meetingOrganizerId;

@@ -286,7 +286,7 @@ public class NLPServiceImpl implements NLPService {
 		// TODO Auto-generated method stub
 
 		try {
-			String actionItemURL = "http://UMS-ACTIONITEMS-SERVICE/api/actions/generate-actions";
+			String actionItemURL = "http://UMS-MEETING-SERVICE/api/actions/generate-actions";
 			HttpEntity<?> hEntity = new HttpEntity<>(actionItem);
 			ResponseEntity<Boolean> responseEntity = restTemplate.exchange(actionItemURL, HttpMethod.POST, hEntity,
 					Boolean.class);
